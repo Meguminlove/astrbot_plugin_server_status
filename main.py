@@ -1,29 +1,48 @@
-# main.py
 from astrbot.api.event.filter import command
 from astrbot.api.star import Context, Star, register
 import psutil
 import platform
 import datetime
 import asyncio
+import os
 from typing import Optional
 
-@register("简单系统状态查询", "腾讯元宝", "服务器状态监控插件", "1.0.0", "https://github.com/Meguminlove/astrbot_plugin_server_status")
+@register("服务器状态监控", "腾讯元宝", "增强版状态监控插件", "1.1.0", "https://github.com/Meguminlove/astrbot_plugin_server_status")
 class ServerMonitor(Star):
     def __init__(self, context: Context):
-        super().__init__(context)  # 正确调用父类构造
-        self.config = getattr(context, 'config', {})  # 安全获取配置
+        super().__init__(context)
+        self.config = getattr(context, 'config', {})
         self._monitor_task: Optional[asyncio.Task] = None
 
-    async def initialize(self):
-        """初始化定时任务"""
-        if (interval := self.config.get('monitor_interval', 0)) > 0:
-            self._monitor_task = asyncio.create_task(self._monitor_loop(interval))
+    def _get_uptime(self) -> str:
+        """获取系统运行时间"""
+        boot_time = psutil.boot_time()
+        now = datetime.datetime.now().timestamp()
+        uptime_seconds = int(now - boot_time)
+        
+        # 转换为可读格式
+        days, remainder = divmod(uptime_seconds, 86400)
+        hours, remainder = divmod(remainder, 3600)
+        minutes, seconds = divmod(remainder, 60)
+        
+        time_units = []
+        if days > 0:
+            time_units.append(f"{days}天")
+        if hours > 0:
+            time_units.append(f"{hours}小时")
+        if minutes > 0:
+            time_units.append(f"{minutes}分")
+        time_units.append(f"{seconds}秒")
+        
+        return " ".join(time_units)
 
-    async def _monitor_loop(self, interval: int):
-        """定时监控循环"""
-        while True:
-            await asyncio.sleep(interval)
-            # 这里可以添加定时推送逻辑
+    def _get_load_avg(self) -> str:
+        """获取系统负载信息"""
+        try:
+            load = os.getloadavg()
+            return f"{load[0]:.2f}, {load[1]:.2f}, {load[2]:.2f}"
+        except AttributeError:
+            return "不可用（Windows系统）"
 
     @command("状态查询", alias=["status"])
     async def server_status(self, event):
@@ -34,11 +53,13 @@ class ServerMonitor(Star):
             disk = psutil.disk_usage('/')
             net = psutil.net_io_counters()
 
-            # 构建状态信息
+            # 构建增强版状态信息
             status_msg = (
                 "🖥️ 服务器状态报告\n"
                 "------------------\n"
-                f"• 系统版本  : {platform.platform()}\n"
+                f"• 系统信息  : {platform.system()} {platform.release()}\n"
+                f"• 运行时间  : {self._get_uptime()}\n"
+                f"• 系统负载  : {self._get_load_avg()}\n"
                 f"• CPU使用率 : {cpu_usage}%\n"
                 f"• 内存使用  : {self._bytes_to_gb(mem.used)}G/{self._bytes_to_gb(mem.total)}G({mem.percent}%)\n"
                 f"• 磁盘使用  : {self._bytes_to_gb(disk.used)}G/{self._bytes_to_gb(disk.total)}G({disk.percent}%)\n"
@@ -48,6 +69,7 @@ class ServerMonitor(Star):
             yield event.plain_result(status_msg)
         except Exception as e:
             yield event.plain_result(f"⚠️ 状态获取失败: {str(e)}")
+
 
     @staticmethod
     def _bytes_to_gb(bytes_num: int) -> float:
