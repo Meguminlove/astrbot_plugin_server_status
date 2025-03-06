@@ -7,7 +7,7 @@ import asyncio
 import os
 from typing import Optional
 
-@register("服务器状态监控", "腾讯元宝", "增强版状态监控插件", "1.1.0", "https://github.com/Meguminlove/astrbot_plugin_server_status")
+@register("服务器状态监控", "腾讯元宝&Meguminlove", "增强版状态监控插件", "1.1.1", "https://github.com/Meguminlove/astrbot_plugin_server_status")
 class ServerMonitor(Star):
     def __init__(self, context: Context):
         super().__init__(context)
