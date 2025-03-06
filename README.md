@@ -70,9 +70,6 @@ pip install -r astrbot_plugin_server_status/requirements.txt
 }
 ```
 
-## 📊 数据可视化
-![资源趋势图示例](https://via.placeholder.com/800x400.png?text=Resource+Usage+Trend+Chart)
-
 ## 📌 注意事项
 1. Linux 系统需安装基础工具：
 ```bash
