@@ -14,8 +14,7 @@
 cd /AstrBot/data/plugins
 git clone https://github.com/Meguminlove/astrbot_plugin_server_status/astrbot_plugin_server_status.git
 
-# 安装依赖
-pip install -r astrbot_plugin_server_status/requirements.txt
+# 控制台重启AstrBot
 ```
 
 ## 🛠️ 功能特性
