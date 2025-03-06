@@ -1,0 +1,9 @@
+{
+    "monitor_interval": {
+        "description": "监控间隔（秒）",
+        "type": "int",
+        "default": 300,
+        "min": 0,
+        "max": 86400
+    }
+}
