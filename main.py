@@ -7,7 +7,7 @@ import asyncio
 import os
 from typing import Optional
 
-@register("服务器状态监控", "腾讯元宝&Meguminlove", "增强版状态监控插件", "1.1.1", "https://github.com/Meguminlove/astrbot_plugin_server_status")
+@register("服务器状态监控", "腾讯元宝&Meguminlove", "简单状态监控插件", "1.1.2", "https://github.com/Meguminlove/astrbot_plugin_server_status")
 class ServerMonitor(Star):
     def __init__(self, context: Context):
         super().__init__(context)
@@ -20,7 +20,6 @@ class ServerMonitor(Star):
         now = datetime.datetime.now().timestamp()
         uptime_seconds = int(now - boot_time)
         
-        # 转换为可读格式
         days, remainder = divmod(uptime_seconds, 86400)
         hours, remainder = divmod(remainder, 3600)
         minutes, seconds = divmod(remainder, 60)
@@ -36,6 +35,14 @@ class ServerMonitor(Star):
         
         return " ".join(time_units)
 
+    def _get_windows_version(self) -> str:
+        """精确识别Windows版本"""
+        version = platform.version()
+        build = int(version.split('.')[-1])
+        if build >= 22000:
+            return "Windows 11"
+        return "Windows 10"
+
     def _get_load_avg(self) -> str:
         """获取系统负载信息"""
         try:
@@ -47,17 +54,25 @@ class ServerMonitor(Star):
     @command("状态查询", alias=["status"])
     async def server_status(self, event):
         try:
-            # 获取系统信息
-            cpu_usage = psutil.cpu_percent(interval=1)
+            # 初始化CPU使用率采样
+            psutil.cpu_percent(interval=0.5)
+            cpu_usage = psutil.cpu_percent(interval=1, percpu=False)
+            
+            # 优化系统版本识别
+            system_name = (
+                self._get_windows_version() 
+                if platform.system() == "Windows" 
+                else f"{platform.system()} {platform.release()}"
+            )
+
             mem = psutil.virtual_memory()
             disk = psutil.disk_usage('/')
             net = psutil.net_io_counters()
 
-            # 构建增强版状态信息
             status_msg = (
                 "🖥️ 服务器状态报告\n"
                 "------------------\n"
-                f"• 系统信息  : {platform.system()} {platform.release()}\n"
+                f"• 系统版本  : {system_name}\n"
                 f"• 运行时间  : {self._get_uptime()}\n"
                 f"• 系统负载  : {self._get_load_avg()}\n"
                 f"• CPU使用率 : {cpu_usage}%\n"
@@ -69,7 +84,6 @@ class ServerMonitor(Star):
             yield event.plain_result(status_msg)
         except Exception as e:
             yield event.plain_result(f"⚠️ 状态获取失败: {str(e)}")
-
 
     @staticmethod
     def _bytes_to_gb(bytes_num: int) -> float:
