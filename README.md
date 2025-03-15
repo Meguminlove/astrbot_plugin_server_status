@@ -1,5 +1,5 @@
 # astrbot_plugin_server_status
-# AstrBot 服务器状态监控插件
+# AstrBot 服务器状态监控插件(此插件是AI编写)
 
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.8+](https://img.shields.io/badge/Python-3.8%2B-blue.svg)](https://www.python.org/)
