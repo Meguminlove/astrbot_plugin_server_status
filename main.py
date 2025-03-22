@@ -37,11 +37,18 @@ class ServerMonitor(Star):
 
     def _get_windows_version(self) -> str:
         """精确识别Windows版本"""
-        version = platform.version()
-        build = int(version.split('.')[-1])
-        if build >= 22000:
-            return "Windows 11"
-        return "Windows 10"
+        try:
+            import winreg
+            key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Microsoft\Windows NT\CurrentVersion")
+            product_name, _ = winreg.QueryValueEx(key, "ProductName")
+            winreg.CloseKey(key)
+            return product_name
+        except Exception:
+            version = platform.version()
+            build = int(version.split('.')[-1])
+            if build >= 22000:
+                return "Windows 11"
+            return "Windows 10"
 
     def _get_load_avg(self) -> str:
         """获取系统负载信息"""
@@ -67,6 +74,7 @@ class ServerMonitor(Star):
 
             mem = psutil.virtual_memory()
             disk = psutil.disk_usage('/')
+            # 网络流量是当前网络适配器的流量总计
             net = psutil.net_io_counters()
 
             status_msg = (
