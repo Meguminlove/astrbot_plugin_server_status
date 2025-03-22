@@ -37,18 +37,7 @@ class ServerMonitor(Star):
 
     def _get_windows_version(self) -> str:
         """精确识别Windows版本"""
-        try:
-            import winreg
-            key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Microsoft\Windows NT\CurrentVersion")
-            product_name, _ = winreg.QueryValueEx(key, "ProductName")
-            winreg.CloseKey(key)
-            return product_name
-        except Exception:
-            version = platform.version()
-            build = int(version.split('.')[-1])
-            if build >= 22000:
-                return "Windows 11"
-            return "Windows 10"
+        return "Windows系统"
 
     def _get_load_avg(self) -> str:
         """获取系统负载信息"""
@@ -86,10 +75,10 @@ class ServerMonitor(Star):
             status_msg = (
                 "🖥️ 服务器状态报告\n"
                 "------------------\n"
+                f"• CPU使用率 : {cpu_usage}%\n"
                 f"• 系统版本  : {system_name}\n"
                 f"• 运行时间  : {self._get_uptime()}\n"
                 f"• 系统负载  : {self._get_load_avg()}\n"
-                f"• CPU使用率 : {cpu_usage}%\n"
                 f"• 内存使用  : {self._bytes_to_gb(mem.used)}G/{self._bytes_to_gb(mem.total)}G({mem.percent}%)\n"
                 f"• 磁盘使用  : {self._bytes_to_gb(disk.used)}G/{self._bytes_to_gb(disk.total)}G({disk.percent}%)\n"
                 f"• 网络流量  : ↑{self._bytes_to_mb(net_sent_per_sec)}MB/s ↓{self._bytes_to_mb(net_recv_per_sec)}MB/s\n"
