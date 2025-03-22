@@ -7,7 +7,7 @@ import asyncio
 import os
 from typing import Optional
 
-@register("服务器状态监控", "腾讯元宝&Meguminlove", "简单状态监控插件", "1.1.2", "https://github.com/Meguminlove/astrbot_plugin_server_status")
+@register("服务器状态监控", "腾讯元宝&Meguminlove", "简单状态监控插件", "1.1.3", "https://github.com/Meguminlove/astrbot_plugin_server_status")
 class ServerMonitor(Star):
     def __init__(self, context: Context):
         super().__init__(context)
@@ -67,15 +67,21 @@ class ServerMonitor(Star):
             
             # 优化系统版本识别
             system_name = (
-                self._get_windows_version() 
-                if platform.system() == "Windows" 
+                self._get_windows_version() \
+                if platform.system() == "Windows" \
                 else f"{platform.system()} {platform.release()}"
             )
 
             mem = psutil.virtual_memory()
             disk = psutil.disk_usage('/')
-            # 网络流量是当前网络适配器的流量总计
-            net = psutil.net_io_counters()
+            # 记录初始网络流量
+            net1 = psutil.net_io_counters()
+            await asyncio.sleep(1)
+            # 记录1秒后的网络流量
+            net2 = psutil.net_io_counters()
+            # 计算每秒网络流量
+            net_sent_per_sec = net2.bytes_sent - net1.bytes_sent
+            net_recv_per_sec = net2.bytes_recv - net1.bytes_recv
 
             status_msg = (
                 "🖥️ 服务器状态报告\n"
@@ -86,7 +92,7 @@ class ServerMonitor(Star):
                 f"• CPU使用率 : {cpu_usage}%\n"
                 f"• 内存使用  : {self._bytes_to_gb(mem.used)}G/{self._bytes_to_gb(mem.total)}G({mem.percent}%)\n"
                 f"• 磁盘使用  : {self._bytes_to_gb(disk.used)}G/{self._bytes_to_gb(disk.total)}G({disk.percent}%)\n"
-                f"• 网络流量  : ↑{self._bytes_to_mb(net.bytes_sent)}MB ↓{self._bytes_to_mb(net.bytes_recv)}MB\n"
+                f"• 网络流量  : ↑{self._bytes_to_mb(net_sent_per_sec)}MB/s ↓{self._bytes_to_mb(net_recv_per_sec)}MB/s\n"
                 f"• 当前时间  : {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
             )
             yield event.plain_result(status_msg)
