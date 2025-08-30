@@ -7,7 +7,7 @@ import asyncio
 import os
 from typing import Optional
 
-@register("服务器状态监控", "腾讯元宝&Meguminlove", "简单状态监控插件", "1.1.4", "https://github.com/Meguminlove/astrbot_plugin_server_status")
+@register("服务器状态监控", "腾讯元宝&Meguminlove", "简单状态监控插件", "1.9.1", "https://github.com/Meguminlove/astrbot_plugin_server_status")
 class ServerMonitor(Star):
     def __init__(self, context: Context):
         super().__init__(context)
@@ -126,3 +126,4 @@ class ServerMonitor(Star):
         if self._monitor_task and not self._monitor_task.cancelled():
             self._monitor_task.cancel()
         await super().terminate()
+
