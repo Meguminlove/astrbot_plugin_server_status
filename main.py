@@ -7,7 +7,7 @@ import asyncio
 import os
 from typing import Optional
 
-@register("服务器状态监控", "腾讯元宝&Meguminlove", "简单状态监控插件", "1.1.3", "https://github.com/Meguminlove/astrbot_plugin_server_status")
+@register("服务器状态监控", "腾讯元宝&Meguminlove", "简单状态监控插件", "1.1.4", "https://github.com/Meguminlove/astrbot_plugin_server_status")
 class ServerMonitor(Star):
     def __init__(self, context: Context):
         super().__init__(context)
@@ -37,7 +37,8 @@ class ServerMonitor(Star):
 
     def _get_windows_version(self) -> str:
         """精确识别Windows版本"""
-        return "Windows系统"
+        # 实际上，platform.platform() 就能提供详细信息
+        return platform.platform()
 
     def _get_load_avg(self) -> str:
         """获取系统负载信息"""
@@ -46,6 +47,30 @@ class ServerMonitor(Star):
             return f"{load[0]:.2f}, {load[1]:.2f}, {load[2]:.2f}"
         except AttributeError:
             return "不可用（Windows系统）"
+            
+    def _get_disk_info(self) -> dict:
+        """获取所有磁盘分区的总使用情况"""
+        total_size = 0
+        used_size = 0
+        partitions = psutil.disk_partitions()
+        for partition in partitions:
+            # 某些分区类型（如CD-ROM）可能在未插入介质时引发错误
+            # 使用 try-except 来跳过这些分区
+            try:
+                usage = psutil.disk_usage(partition.mountpoint)
+                total_size += usage.total
+                used_size += usage.used
+            except OSError:
+                # 忽略无法访问的分区
+                continue
+        
+        percent = (used_size / total_size * 100) if total_size > 0 else 0
+        
+        return {
+            'total': total_size,
+            'used': used_size,
+            'percent': percent
+        }
 
     @command("状态查询", alias=["status"])
     async def server_status(self, event):
@@ -56,13 +81,13 @@ class ServerMonitor(Star):
             
             # 优化系统版本识别
             system_name = (
-                self._get_windows_version() \
-                if platform.system() == "Windows" \
+                self._get_windows_version()
+                if platform.system() == "Windows"
                 else f"{platform.system()} {platform.release()}"
             )
 
             mem = psutil.virtual_memory()
-            disk = psutil.disk_usage('/')
+            disk = self._get_disk_info() # <-- 修改点：调用新的磁盘信息获取方法
             # 记录初始网络流量
             net1 = psutil.net_io_counters()
             await asyncio.sleep(1)
@@ -80,7 +105,8 @@ class ServerMonitor(Star):
                 f"• 运行时间  : {self._get_uptime()}\n"
                 f"• 系统负载  : {self._get_load_avg()}\n"
                 f"• 内存使用  : {self._bytes_to_gb(mem.used)}G/{self._bytes_to_gb(mem.total)}G({mem.percent}%)\n"
-                f"• 磁盘使用  : {self._bytes_to_gb(disk.used)}G/{self._bytes_to_gb(disk.total)}G({disk.percent}%)\n"
+                # <-- 修改点：使用新的磁盘信息字典
+                f"• 磁盘使用  : {self._bytes_to_gb(disk['used'])}G/{self._bytes_to_gb(disk['total'])}G({disk['percent']:.1f}%)\n"
                 f"• 网络流量  : ↑{self._bytes_to_mb(net_sent_per_sec)}MB/s ↓{self._bytes_to_mb(net_recv_per_sec)}MB/s\n"
                 f"• 当前时间  : {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
             )
